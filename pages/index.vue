@@ -1,23 +1,10 @@
 <template>
-  <div>
-    <input
-      type="text"
-      v-model="searchTerm"
-      @input="termChange">
-    <table>
-      <thead>
-        <tr>
-          <td>1st Player</td>
-          <td>2nd Player</td>
-        </tr>
-      </thead>
-      <tbody>
-        <tr :key="key" v-for="(pair, key) in selectedPairs">
-          <td>{{getPlayerFullName(pair.first)}}</td>
-          <td>{{getPlayerFullName(pair.second)}}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="wrapper">
+    <h3 class="header">
+      NBA PLAYER'S HEIGHT SEARCH
+    </h3>
+    <PairSearchBar :searchTerm="searchTerm" @termChange="handleTermChange"/>
+    <PairTable :items="selectedPairs"/>
   </div>
 </template>
 
@@ -27,35 +14,28 @@ export default {
   async fetch () {
     fetch('https://mach-eight.uc.r.appspot.com/')
       .then(response => response.json())
-      .then(data => {
-        this.players = data.values.slice(0, 5);
-      });
+      .then(data => this.players = data.values)
   },
   data: () => ({
-    searchTerm: 0,
+    searchTerm: undefined,
     players: [],
     selectedPairs: []
   }),
   methods: {
-    termChange (event) {
-      if (parseInt(event.target.value) > 0 && this.players.length > 0) {
-        this.searchTerm = parseInt(event.target.value)
+    handleTermChange (event) {
+      if (parseInt(event) > 0 && this.players.length > 0) {
+        this.selectedPairs = []
+        this.searchTerm = parseInt(event)
         this.lookForPairs()
       }
     },
-    lookForPairs (x = 0, y = 1, acum = []) {
-      const sum = (parseInt(this.players[x].h_in) + parseInt(this.players[y].h_in));
-      
-      if (x === (this.players.length - 2)) {
-        return;
-      } else if (y < (this.players.length - 1)) {
-        if (sum === this.searchTerm) this.selectedPairs.push({ first: this.players[x], second: this.players[y] })
-        this.lookForPairs(x, y + 1);
-      } else if (y === (this.players.length - 1)) {
-        if (sum === this.searchTerm) this.selectedPairs.push({ first: this.players[x], second: this.players[y] })
-        this.lookForPairs(x + 1, x + 2)
-      } else {
-        return;
+    lookForPairs (x = 0, y = 1) {
+      for (let i = 0; i < (this.players.length - 2); i++) {
+        const secArray = this.players
+                            .slice(i + 1)
+                            .filter(p => ( this.searchTerm - parseInt(this.players[i].h_in)) === parseInt(p.h_in) )
+                            .map(p => ({ first: this.getPlayerFullName(this.players[i]), second: this.getPlayerFullName(p) }))
+        this.selectedPairs = [...this.selectedPairs, ...secArray]
       }
     },
     getPlayerFullName(player) {
@@ -64,3 +44,12 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+  .wrapper {
+    padding: 10px;
+  }
+  .header {
+    text-align: center;
+  }
+</style>
